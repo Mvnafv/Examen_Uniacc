@@ -20,7 +20,7 @@ De momento las ideas que tengo en mente son 2.
 Partio principalmente como un juego clasico o antiguo llamado (El colgado)
 Ahora estoy pensando en volerlo una cajita de frases.
 
-![Imagen](/Imagenes/Esquema.pdf)
+![Imagen](./Imagenes/Esquema_page-0001.jpg)
 
 ## Códigos Usados
 Codigo N°1
