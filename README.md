@@ -1,4 +1,4 @@
-# Prototipo
+# Juego RPG con Frases.
 Trabajo de Universidad.
 > [!NOTE]
 > _Este es un trabajo aun en proceso para la universidad, Clase Electronica_
@@ -12,135 +12,17 @@ Trabajo de Universidad.
 
 >-Cables de coneccion.
 
-### "nombre faltante"
-_Con el paso de los dias estoy buscando ideas para usar de modo la pantalla y botones._
-#### Ideas Precentes
-De momento las ideas que tengo en mente son 2.
-*Aclaro que sigue todo en proceso por lo que sigo pensando ideas respecto al uso de los materiales o si le sumo algo mas*
-Partio principalmente como un juego clasico o antiguo llamado (El colgado)
-Ahora estoy pensando en volerlo una cajita de frases.
+## "En busca de Aquella Frase"
+>-Juego basado en las desiciones de la persona que tiene los botones.
+
+### Esquema Del Circuito.
 
 ![Imagen](./Imagenes/Esquema_page-0001.jpg)
 
-## Códigos Usados
-Codigo N°1
-```
-#include <Wire.h>
-#include <LiquidCrystal_I2C.h>
-#include <Keypad.h>
+### Foto del Circuito Armado
 
-// LCD I2C
-LiquidCrystal_I2C lcd(0x27, 16, 2);  // Asegúrate de que 0x27 sea tu dirección I2C
-
-// Teclado 4x4
-const byte ROWS = 4;
-const byte COLS = 4;
-char keys[ROWS][COLS] = {
-  {'M','N','O','P'},
-  {'I','J','K','L'},
-  {'E','F','G','H'},
-  {'A','B','C','D'}
-};
-byte rowPins[ROWS] = {2, 3, 4, 5};
-byte colPins[COLS] = {6, 7, 8, 9};
-Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
-
-// LEDs
-const int lifeLEDs[3] = {10, 11, 12}; // LEDs rojos
-const int winLED = 13;                // LED verde
-
-// Palabras
-String palabras[] = {"LEGGO", "CAPA", "LUNA", "SOL", "PERRO"};
-int nivel = 0;
-int vidas = 3;
-String palabraActual;
-String palabraVisible;
-String letrasFaltantes;
-
-void setup() {
-  lcd.init();
-  lcd.backlight();
-  randomSeed(analogRead(A0)); // Semilla para aleatorio
-
-  for (int i = 0; i < 3; i++) pinMode(lifeLEDs[i], OUTPUT);
-  pinMode(winLED, OUTPUT);
-
-  iniciarNivel();
-}
-
-void iniciarNivel() {
-  vidas = 3;
-  for (int i = 0; i < 3; i++) digitalWrite(lifeLEDs[i], HIGH);
-  digitalWrite(winLED, LOW);
-
-  palabraActual = palabras[nivel];
-  palabraVisible = palabraActual;
-  letrasFaltantes = "";
-
-  // Ocultar el 20% de las letras (mínimo 1)
-  int letrasAOcultar = max(1, palabraActual.length() / 2);
-  while (letrasAOcultar > 0) {
-    int i = random(palabraActual.length());
-    if (palabraVisible[i] != '_') {
-      palabraVisible[i] = '_';
-      letrasFaltantes += palabraActual[i];
-      letrasAOcultar--;
-    }
-  }
-
-  mostrarPantalla();
-}
-
-void mostrarPantalla() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Nombra el Juego");
-  lcd.setCursor(0, 1);
-  lcd.print(palabraVisible);
-}
-
-void loop() {
-  char tecla = keypad.getKey();
-  if (tecla) {
-    tecla = toupper(tecla);
-
-    if (letrasFaltantes.indexOf(tecla) != -1) {
-      // Letra correcta
-      for (int i = 0; i < palabraActual.length(); i++) {
-        if (palabraActual[i] == tecla && palabraVisible[i] == '_') {
-          palabraVisible[i] = tecla;
-        }
-      }
-      letrasFaltantes.remove(letrasFaltantes.indexOf(tecla), 1);
-    } else {
-      // Letra incorrecta
-      if (vidas > 0) {
-        vidas--;
-        digitalWrite(lifeLEDs[vidas], LOW);
-      }
-    }
-
-    mostrarPantalla();
-  }
-
-  if (palabraVisible == palabraActual) {
-    digitalWrite(winLED, HIGH);
-    delay(2000);
-    nivel = (nivel + 1) % (sizeof(palabras) / sizeof(palabras[0]));
-    iniciarNivel();
-  }
-
-  if (vidas == 0) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Perdiste!");
-    lcd.setCursor(0, 1);
-    lcd.print("Palabra: " + palabraActual);
-    delay(3000);
-    iniciarNivel();
-  }
-```
-Codigo N°2
+![Imagen](./Imagenes/Circuito.png)
+Codigo
 ```
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
