@@ -1,7 +1,6 @@
-# Juego RPG con Frases.
-Trabajo de Universidad.
-> [!NOTE]
-> _Este es un trabajo aun en proceso para la universidad, Clase Electronica_
+# ExamenElectronicaUniacc
+### Tu Vida Bajo un Botón
+## Descripcion Conceptual.
 
 **Materiales**
 >-Pantalla LCD 16x2px.
@@ -12,8 +11,7 @@ Trabajo de Universidad.
 
 >-Cables de coneccion.
 
-## "Tu Vida Hoy"
->-Juego basado en las desiciones de la persona que tiene los botones y su dia.
+## Descripcion Tecnica
 
 ### Esquema Del Circuito.
 ![Imagen](./Imagenes/Esquema_page-0001.jpg)
