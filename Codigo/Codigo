@@ -1,0 +1,239 @@
+´´´
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+
+// LCD 16x2 I2C
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Keypad 4x4
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'A','B','C','D'},
+  {'1','2','3','4'},
+  {'5','6','7','8'},
+  {'9','0','#','*'}
+};
+byte rowPins[ROWS] = {2, 3, 4, 5};
+byte colPins[COLS] = {6, 7, 8, 9};
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+// Pines LED RGB
+const int pinR = 10;
+const int pinG = 11;
+const int pinB = 12;
+
+// Frases para cuando la máquina habla sola (nivel bajo)
+const char* frasesInactivas[] = {
+  "Silencio eterno",
+  "¿Hay alguien?",
+  "Hmm...",
+  "Estoy pensando...",
+  "La soledad me habla",
+  "01001000 ayuda",
+  "¿Botón roto?",
+  "¿Y ahora qué?",
+  "Esperando...",
+  "Zzzz..."
+};
+
+// Insultos suaves (nivel medio)
+const char* insultosSuaves[] = {
+  "Patético intento",
+  "Eso fue raro",
+  "¿Eso crees que sirve?",
+  "JA. No.",
+  "Sin sentido",
+  "Poco original",
+  "Intenta algo nuevo"
+};
+
+// Insultos fuertes (nivel alto)
+const char* insultosFuertes[] = {
+  "Eres un inútil",
+  "No me hagas reir",
+  "¿En serio?",
+  "¡Déjame en paz!",
+  "Me aburres mucho",
+  "¡Basta ya!",
+  "No tienes remedio"
+};
+
+// Historia
+struct Nodo {
+  char linea1[17];
+  char linea2[17];
+  char respuestas[4];   // teclas válidas para este nodo
+  int siguientes[4];    // a qué nodo lleva cada tecla
+  bool esFinal;
+};
+
+Nodo historia[] = {
+  {"Hola ser vivo", "¿Tienes alma?", {'A','B'}, {1,2}, false},
+  {"Responde en otro", "idioma: Oui?", {'1','2'}, {3,4}, false},
+  {"Zaltron dice sí", "Vruum no", {'3','4'}, {5,6}, false},
+  {"Camina en luz", "o sombra?", {'A','B'}, {7,8}, false},
+  {"Fin o inicio?", "Elige ya", {'A','B'}, {9,10}, false},
+  {"Has vencido", "# reiniciar", {'#','#'}, {-1,-1}, true},
+  {"Te apagas", "# reiniciar", {'#','#'}, {-1,-1}, true},
+  {"Te espera paz", "# reiniciar", {'#','#'}, {-1,-1}, true},
+  {"Más allá está", "# reiniciar", {'#','#'}, {-1,-1}, true},
+  {"Sueña fuerte", "# reiniciar", {'#','#'}, {-1,-1}, true},
+  {"No vuelvas", "# reiniciar", {'#','#'}, {-1,-1}, true}
+};
+
+const int totalNodos = sizeof(historia) / sizeof(historia[0]);
+int nodoActual = 0;
+
+// Contador de veces que se ha presionado cada tecla
+char teclasValidas[] = {'A','B','C','D','1','2','3','4','5','6','7','8','9','0','#','*'};
+int contadorTeclas[sizeof(teclasValidas)] = {0};
+
+// Buscar índice de tecla en arreglo
+int encontrarIndiceTecla(char t) {
+  for (int i = 0; i < sizeof(teclasValidas); i++)
+    if (teclasValidas[i] == t) return i;
+  return -1;
+}
+
+// Mostrar nodo en pantalla
+void mostrarNodo(int idx) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(historia[idx].linea1);
+  lcd.setCursor(0, 1);
+  lcd.print(historia[idx].linea2);
+}
+
+// Cambiar color aleatorio
+void prenderColorAleatorio() {
+  analogWrite(pinR, random(0, 256));
+  analogWrite(pinG, random(0, 256));
+  analogWrite(pinB, random(0, 256));
+}
+
+// Mostrar insulto según nivel de enojo
+void mostrarInsulto(int nivel) {
+  lcd.clear();
+  if (nivel == 1) {
+    lcd.print(insultosSuaves[random(0, sizeof(insultosSuaves) / sizeof(insultosSuaves[0]))]);
+  } else if (nivel >= 2) {
+    lcd.print(insultosFuertes[random(0, sizeof(insultosFuertes) / sizeof(insultosFuertes[0]))]);
+  }
+  delay(2000);
+}
+
+// Máquina habla sola o insulta al vacío
+void hablarSola() {
+  int tipo = random(0, 10);
+  lcd.clear();
+  if (tipo < 6) { // 60% habla sola
+    lcd.print(frasesInactivas[random(0, sizeof(frasesInactivas) / sizeof(frasesInactivas[0]))]);
+  } else { // 40% insultos suaves
+    lcd.print(insultosSuaves[random(0, sizeof(insultosSuaves) / sizeof(insultosSuaves[0]))]);
+  }
+  prenderColorAleatorio();
+  delay(2000);
+}
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+
+  pinMode(pinR, OUTPUT);
+  pinMode(pinG, OUTPUT);
+  pinMode(pinB, OUTPUT);
+
+  randomSeed(analogRead(0));
+  mostrarNodo(nodoActual);
+}
+
+void loop() {
+  unsigned long inicio = millis();
+  const unsigned long espera = 10000;
+  char tecla = NO_KEY;
+
+  while ((millis() - inicio) < espera) {
+    tecla = keypad.getKey();
+    if (tecla != NO_KEY) break;
+  }
+
+  if (tecla == NO_KEY) {
+    hablarSola();
+    mostrarNodo(nodoActual);
+    return;
+  }
+
+  prenderColorAleatorio();
+
+  if (tecla == '#') {
+    // Reiniciar juego y contadores
+    nodoActual = 0;
+    for (int i=0; i < sizeof(contadorTeclas); i++) {
+      contadorTeclas[i] = 0;
+    }
+    mostrarNodo(nodoActual);
+    return;
+  }
+
+  int idxTecla = encontrarIndiceTecla(tecla);
+  if (idxTecla != -1) {
+    contadorTeclas[idxTecla]++;
+  }
+
+  int nivelEnojo = 0;
+  if (contadorTeclas[idxTecla] >= 3) nivelEnojo = 2;      // Muy enojado
+  else if (contadorTeclas[idxTecla] == 2) nivelEnojo = 1; // Enojado leve
+
+  if (nivelEnojo > 0) {
+    mostrarInsulto(nivelEnojo);
+  }
+
+  Nodo nodo = historia[nodoActual];
+
+  // Respuestas más variadas: cada vez que se presione la misma tecla, la máquina responde con diferente frase
+  // Para simplificar, solo cambia la segunda línea del LCD con mensajes extra aleatorios
+  if (nodoActual >= 0 && nodoActual < totalNodos) {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print(nodo.linea1);
+
+    // Variar la segunda línea según conteo de tecla y al azar
+    int variacion = contadorTeclas[idxTecla] % 3;
+    if (variacion == 0) {
+      lcd.setCursor(0,1);
+      lcd.print(nodo.linea2);
+    } else if (variacion == 1) {
+      lcd.setCursor(0,1);
+      lcd.print("OK, sigamos");
+    } else {
+      lcd.setCursor(0,1);
+      lcd.print("¿Otra vez?!");
+    }
+    delay(1500);
+  }
+
+  // Buscar si la tecla está en las respuestas válidas y moverse
+  for (int i = 0; i < 4; i++) {
+    if (nodo.respuestas[i] == tecla) {
+      if (nodo.siguientes[i] == -1) {
+        lcd.clear();
+        lcd.print("Fin.");
+        delay(2000);
+        return;
+      } else {
+        nodoActual = nodo.siguientes[i];
+        mostrarNodo(nodoActual);
+        return;
+      }
+    }
+  }
+
+  // Si la tecla no es válida en este nodo
+  lcd.clear();
+  lcd.print("Respuesta inutil");
+  delay(1500);
+  mostrarNodo(nodoActual);
+}
+´´´
