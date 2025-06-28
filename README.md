@@ -1,6 +1,6 @@
 # ExamenElectronicaUniacc
 
-### Tu vida bajo un botón
+### Una vida artificial.
 
 ## Descripción conceptual.
 
@@ -15,6 +15,8 @@ Materiales
 >-Arduino Uno(USB).
 
 >-Cables de coneccion.
+
+>-Led RGB
 
 ## Descripción técnica
 
