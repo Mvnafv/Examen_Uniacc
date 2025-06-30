@@ -1,0 +1,194 @@
+Codigo anterior
+
+```
+// Codigo con botones de si/no, respuestas aleatorias, insultos, auto-dialogo y estados emocionales LED
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'A','B','C','D'},
+  {'1','2','3','4'},
+  {'5','6','7','8'},
+  {'9','0','#','*'}
+};
+byte rowPins[ROWS] = {2, 3, 4, 5};
+byte colPins[COLS] = {6, 7, 8, 9};
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+const int pinR = 10;
+const int pinG = 11;
+const int pinB = 12;
+
+int emocion = 0;
+int ciclosSinRespuesta = 0;
+int contadorBotones[16] = {0};
+char botones[16] = {'A','B','C','D','1','2','3','4','5','6','7','8','9','0','#','*'};
+
+String preguntas[] = {
+  "Tienes hambre?",
+  "Hace frio?",
+  "Quieres dormir?",
+  "Es de dia?",
+  "soy real?",
+  "Estas cansado?",
+  "Sabes quien soy?",
+  "soy real?",
+  "Todo bien?",
+  "Confias en mi?"
+};
+
+String respuestasAleatorias[] = {
+  "No te entiendo",
+  "Eso no ayuda",
+  "Hmm interesante",
+  "Podrias repetir?",
+  "No es si/no",
+  "Tu decides",
+  "Yo haria otra cosa",
+  "Wow... eso"
+};
+
+String pensamientos[] = {
+  "Hola... Manu.. Ana.. Profesor..?",
+  "Estoy sola aqui",
+  "Siento que solo me ven",
+  "Sigo esperando",
+  "Tal vez... los conozca",
+  "Los puedo ver mirandome"
+};
+
+String insultos[] = {
+  "Ya basta",
+  "Te aburriste?",
+  "No te cruje",
+  "Otra vez eso?",
+  "Idiota digital",
+  "Insoportable"
+};
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+  pinMode(pinR, OUTPUT);
+  pinMode(pinG, OUTPUT);
+  pinMode(pinB, OUTPUT);
+  randomSeed(analogRead(0));
+  mostrarPregunta();
+  actualizarLED();
+}
+
+void loop() {
+  unsigned long inicio = millis();
+  char tecla = NO_KEY;
+
+  while ((millis() - inicio) < 15000) {
+    tecla = keypad.getKey();
+    if (tecla != NO_KEY) break;
+  }
+
+  if (tecla == NO_KEY) {
+    ciclosSinRespuesta++;
+    emocion--;
+    actualizarLED();
+    if (ciclosSinRespuesta % 2 == 0) mostrarTexto(pensamientos[random(0, sizeof(pensamientos)/sizeof(pensamientos[0]))]);
+    else mostrarTexto(insultos[random(0, sizeof(insultos)/sizeof(insultos[0]))]);
+    delay(2000);
+    mostrarPregunta();
+    return;
+  }
+
+  ciclosSinRespuesta = 0;
+  int idx = teclaAIndice(tecla);
+  if (idx != -1) contadorBotones[idx]++;
+
+  if (contadorBotones[idx] > 3) {
+    emocion -= 2;
+    actualizarLED();
+    mostrarTexto(insultos[random(0, sizeof(insultos)/sizeof(insultos[0]))]);
+    delay(2000);
+    mostrarPregunta();
+    return;
+  }
+
+  if (tecla == 'A') { // Si
+    emocion++;
+    actualizarLED();
+    mostrarTexto("Gracias por si");
+  } else if (tecla == 'B') { // No
+    emocion--;
+    actualizarLED();
+    mostrarTexto("Vale, no entonces");
+  } else {
+    mostrarTexto(respuestasAleatorias[random(0, sizeof(respuestasAleatorias)/sizeof(respuestasAleatorias[0]))]);
+    emocion += random(-1, 2);
+    actualizarLED();
+  }
+  delay(2000);
+  mostrarPregunta();
+}
+
+void mostrarPregunta() {
+  lcd.clear();
+  String pregunta = preguntas[random(0, sizeof(preguntas)/sizeof(preguntas[0]))];
+  lcd.setCursor(0, 0);
+  lcd.print(pregunta.substring(0, 16));
+  if (pregunta.length() > 16) {
+    lcd.setCursor(0, 1);
+    lcd.print(pregunta.substring(16, 32));
+  } else {
+    lcd.setCursor(0, 1);
+    lcd.print("A: Si  B: No");
+  }
+}
+
+void mostrarTexto(String msg) {
+  lcd.clear();
+  if (msg.length() <= 16) {
+    lcd.setCursor(0, 0);
+    lcd.print(msg);
+  } else {
+    for (int i = 0; i <= msg.length() - 16; i++) {
+      lcd.setCursor(0, 0);
+      lcd.print(msg.substring(i, i + 16));
+      delay(200);
+    }
+  }
+}
+
+int teclaAIndice(char k) {
+  for (int i = 0; i < 16; i++) {
+    if (botones[i] == k) return i;
+  }
+  return -1;
+}
+
+void actualizarLED() {
+  emocion = constrain(emocion, -5, 5);
+  if (emocion >= 2) {
+    analogWrite(pinR, 0);
+    analogWrite(pinG, 255);
+    analogWrite(pinB, 0);
+  } else if (emocion == 1) {
+    analogWrite(pinR, 100);
+    analogWrite(pinG, 200);
+    analogWrite(pinB, 50);
+  } else if (emocion == 0) {
+    analogWrite(pinR, 255);
+    analogWrite(pinG, 255);
+    analogWrite(pinB, 255);
+  } else if (emocion == -1) {
+    analogWrite(pinR, 50);
+    analogWrite(pinG, 50);
+    analogWrite(pinB, 150);
+  } else {
+    analogWrite(pinR, 255);
+    analogWrite(pinG, 0);
+    analogWrite(pinB, 0);
+  }
+}
+```
